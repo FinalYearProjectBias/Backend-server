@@ -1,6 +1,10 @@
+from dataclasses import Field
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pyexpat.errors import messages
+
 from firebase_config import db  # Firebase config
 from typing import Optional
 import hashlib
@@ -25,23 +29,33 @@ class SignupUser(BaseModel):
     name: str
     email: str
     password: str
+    userType:str
 
 # User model for login
 class LoginUser(BaseModel):
     email: str
     password: str
+    userType:str
+class GrievanceModel(BaseModel):
+    message:str
+    user_ref:str
+    responded:bool=False
 
-@app.post("/signup/")
+
+
+
+@app.post("/api/v1/user/signup/")
 async def signup_user(user: SignupUser):
     try:
         # Check if the user already exists
-        users_ref = db.collection("users")
+        user_type=user.userType
+        users_ref = db.collection(user_type)
         existing_user = users_ref.where("email", "==", user.email).get()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already exists")
 
         # Create a document with auto-generated ID
-        doc_ref = db.collection("users").document()
+        doc_ref = db.collection(user_type).document()
         user_dict = user.dict()
         # Hash the password before storing
         user_dict["password"] = hash_password(user_dict["password"])
@@ -50,32 +64,40 @@ async def signup_user(user: SignupUser):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/login/")
+@app.post("/api/v1/user/login")
 async def login_user(user: LoginUser):
     try:
-        # Search for the user by email
-        users_ref = db.collection("users")
-        user_query = users_ref.where("email", "==", user.email).get()
+        user_type = user.userType
+
+        # Use 'where' with keyword arguments to remove the warning
+        users_ref = db.collection(user_type)
+        user_query = users_ref.where(field_path="email", op_string="==", value=user.email).get()
 
         # Validate user existence
         if not user_query:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Get the user data from Firestore
-        user_data = user_query[0].to_dict()
-
+        # Get the user document and extract the UID
+        user_doc = user_query[0]
+        user_data = user_doc.to_dict()
+        user_uid = {"user_id":user_doc.id}
+        user_data.update(user_uid)
+        print(f"User Data: {user_data}")
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
 
-        return {"message": "Login successful", "user": {"name": user_data.get("name"), "email": user_data.get("email")}}
+        return {
+            "message": "Login successful",
+            "User Data": user_data
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: str):
     try:
-        doc_ref = db.collection("users").document(user_id)
+        doc_ref = db.collection("Teacher").document(user_id)
         user = doc_ref.get()
         if user.exists:
             return user.to_dict()
@@ -83,6 +105,34 @@ async def get_user(user_id: str):
             raise HTTPException(status_code=404, detail="User not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/admin/get_grievance")
+async def get_grievance():
+    try:
+        doc_ref=db.collection("Grievance")
+        docs=doc_ref.stream()
+        all_data=[]
+        for doc in docs:
+            doc_data=doc.to_dict()
+            doc_data["acknowledgement number"]=doc.id
+            all_data.append(doc_data)
+        return{"message":"Grievance","data":all_data}
+    except Exception as e:
+        raise  HTTPException(status_code=500,detail=str(e))
+
+
+
+@app.post("/api/v1/user/add_grievance")
+async def add_grievance(grievance:GrievanceModel):
+    try:
+        doc_ref=db.collection("Grievance").document()
+        print(doc_ref)
+        grievance_dict=grievance.dict()
+        doc_ref.set(grievance_dict)
+        doc_id=doc_ref.id
+        return {"message": "Grievance added successfully","acknowledgement number":doc_id ,"grievance": grievance}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
 
 @app.put("/users/{user_id}")
 async def update_user(user_id: str, user: SignupUser):
@@ -104,3 +154,6 @@ async def delete_user(user_id: str):
         return {"message": "User deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
