@@ -115,7 +115,7 @@ async def get_grievance():
         all_data=[]
         for doc in docs:
             doc_data=doc.to_dict()
-            doc_data["acknowledgement number"]=doc.id
+            doc_data["ack_number"]=doc.id
             all_data.append(doc_data)
         return{"message":"Grievance","data":all_data}
     except Exception as e:
