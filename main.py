@@ -54,6 +54,7 @@ async def signup_user(user: SignupUser):
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already exists")
 
+
         # Create a document with auto-generated ID
         doc_ref = db.collection(user_type).document()
         user_dict = user.dict()
@@ -64,7 +65,7 @@ async def signup_user(user: SignupUser):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/user/login")
+@app.post("/api/v1/user/login/")
 async def login_user(user: LoginUser):
     try:
         user_type = user.userType
@@ -86,15 +87,15 @@ async def login_user(user: LoginUser):
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
-
         return {
             "message": "Login successful",
-            "User Data": user_data
+            "user_data": user_data
         }
     except Exception as e:
+        print(f"error:{str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/users/{user_id}")
+@app.get("/users/{user_id}/")
 async def get_user(user_id: str):
     try:
         doc_ref = db.collection("Teacher").document(user_id)
@@ -106,7 +107,7 @@ async def get_user(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/admin/get_grievance")
+@app.get("/api/v1/admin/get_grievance/")
 async def get_grievance():
     try:
         doc_ref=db.collection("Grievance")
@@ -122,7 +123,7 @@ async def get_grievance():
 
 
 
-@app.post("/api/v1/user/add_grievance")
+@app.post("/api/v1/user/add_grievance/")
 async def add_grievance(grievance:GrievanceModel):
     try:
         doc_ref=db.collection("Grievance").document()
