@@ -1,4 +1,5 @@
 from dataclasses import Field
+from logging import raiseExceptions
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -171,7 +172,7 @@ async def add_grievance(grievance:GrievanceModel):
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
-@app.put("/api/v1/admin/approve/")
+@app.put("/api/v1/admin/approve_user/")
 async def approve_user(user:approveUser):
     try:
         print(user)
@@ -213,57 +214,54 @@ async def reply_grievance(reply:replyModel):
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
-@app.get("/api/v1/admin/get_all_teachers")
-async def get_all_teachers():
+
+def get_approved_data(user_type:str):
+    doc_ref = db.collection(user_type)
+    docs = doc_ref.stream()
+    data = []
+    for doc in docs:
+        doc_data = doc.to_dict()
+        doc_data["user_id"] = doc.id
+        if doc_data["approved"]:
+            data.append(doc_data)
+    return data
+
+def get_not_approved_data(user_type:str):
+    doc_ref = db.collection(user_type)
+    docs = doc_ref.stream()
+    data = []
+    for doc in docs:
+        doc_data = doc.to_dict()
+        doc_data["user_id"] = doc.id
+        if not doc_data["approved"]:
+            data.append(doc_data)
+    return data
+
+
+@app.get("/api/v1/get_approved_users")
+async def get_approved_users():
     try:
-        doc_ref=db.collection("Teacher")
-        docs=doc_ref.stream()
-        a_data = []
-        n_a_data = []
-        # non_approved_data = []
-        for doc in docs:
-            doc_data = doc.to_dict()
-            doc_data["user_id"] = doc.id
-            if not doc_data["approved"]:
-                a_data.append(doc_data)
-        return {"a_data":a_data,"n_a_data":n_a_data}
+        data=[]
+        student_data=get_approved_data("student")
+        teacher_data = get_approved_data("teacher")
+        non_teacher_data = get_approved_data("non_teacher")
+        data.append(student_data)
+        data.append(teacher_data)
+        data.append(non_teacher_data)
+        return data
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
-@app.get("/api/v1/admin/get_all_non_teachers")
-async def get_all_non_teachers():
+@app.get("/api/v1/admin/get_pending_approval_users")
+async def get_not_approved_users():
     try:
-        doc_ref=db.collection("non_teacher")
-        docs=doc_ref.stream()
-        a_data=[]
-        n_a_data=[]
-        for doc in docs:
-            doc_data=doc.to_dict()
-            doc_data["user_id"]=doc.id
-            if doc_data["approved"]:
-                a_data.append(doc_data)
-            else:
-                n_a_data.append(doc_data)
-        return{"a_data":a_data,"n_a_data":n_a_data}
-    except Exception as e:
-        raise HTTPException(status_code=500,detail=str(e))
-
-
-@app.get("/api/v1/admin/get_all_students")
-async def get_all_students():
-    try:
-        doc_ref=db.collection("student")
-        docs=doc_ref.stream()
-        a_data = []
-        n_a_data = []
-        for doc in docs:
-            doc_data = doc.to_dict()
-            doc_data["user_id"] = doc.id
-            if doc_data["approved"]:
-                a_data.append(doc_data)
-            else:
-                n_a_data.append(doc_data)
-        return {"a_data": a_data,"n_a_data":n_a_data}
-
+        data=[]
+        student_data=get_not_approved_data("student")
+        teacher_data = get_not_approved_data("teacher")
+        non_teacher_data = get_not_approved_data("non_teacher")
+        data.append(student_data)
+        data.append(teacher_data)
+        data.append(non_teacher_data)
+        return data
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
