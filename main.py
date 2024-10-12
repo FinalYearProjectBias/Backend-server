@@ -131,7 +131,6 @@ async def login_user(user: LoginUser):
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
-        print(f"Approval: {user_data["approved"]}")
         if not user_data["approved"]:
             raise HTTPException(status_code=400, detail="User not approved")
         return {
@@ -219,15 +218,13 @@ async def get_all_teachers():
     try:
         doc_ref=db.collection("Teacher")
         docs=doc_ref.stream()
-        approved_data = []
-        non_approved_data = []
+        data = []
+        # non_approved_data = []
         for doc in docs:
             doc_data = doc.to_dict()
-            if doc_data["approved"]:
-                approved_data.append(doc_data)
-            else:
-                non_approved_data.append(doc_data)
-        return {"Approved": approved_data, "Non-Approved": non_approved_data}
+            if not doc_data["approved"]:
+                data.append(doc_data)
+        return {"data":data}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
@@ -236,15 +233,12 @@ async def get_all_non_teachers():
     try:
         doc_ref=db.collection("non_teacher")
         docs=doc_ref.stream()
-        approved_data=[]
-        non_approved_data=[]
+        data=[]
         for doc in docs:
             doc_data=doc.to_dict()
-            if doc_data["approved"]:
-                approved_data.append(doc_data)
-            else:
-                non_approved_data.append(doc_data)
-        return{"Approved":approved_data,"Non-Approved":non_approved_data}
+            if not doc_data["approved"]:
+                data.append(doc_data)
+        return{"data":data}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
@@ -254,15 +248,13 @@ async def get_all_students():
     try:
         doc_ref=db.collection("student")
         docs=doc_ref.stream()
-        approved_data = []
-        non_approved_data = []
+        data = []
         for doc in docs:
             doc_data = doc.to_dict()
-            if doc_data["approved"]:
-                approved_data.append(doc_data)
-            else:
-                non_approved_data.append(doc_data)
-        return {"Approved": approved_data, "Non-Approved": non_approved_data}
+            if not doc_data["approved"]:
+                data.append(doc_data)
+
+        return {"data": data}
 
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
