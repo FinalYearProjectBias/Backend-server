@@ -51,6 +51,7 @@ class LoginUser(BaseModel):
     email: str
     password: str
     userType:str
+
 class GrievanceModel(BaseModel):
     title:str
     message:str
@@ -130,7 +131,8 @@ async def login_user(user: LoginUser):
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
-        if not user.approved:
+        print(f"Approval: {user_data["approved"]}")
+        if not user_data["approved"]:
             raise HTTPException(status_code=400, detail="User not approved")
         return {
             "message": "Login successful",
