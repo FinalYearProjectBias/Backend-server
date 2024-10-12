@@ -52,9 +52,9 @@ class LoginUser(BaseModel):
     password: str
     userType:str
 class GrievanceModel(BaseModel):
+    title:str
     message:str
     user_ref:str
-    responded:bool=False
 
 class approveUser(BaseModel):
     user_id:str
@@ -63,7 +63,7 @@ class approveUser(BaseModel):
 
 class replyModel(BaseModel):
     reply:str
-    responded:bool=True
+    ack_number:str
 
 @app.post("/api/v1/student/signup/")
 async def signup_user(user: StudentSignupUser):
@@ -164,6 +164,7 @@ async def add_grievance(grievance:GrievanceModel):
         grievance_dict["user_ref"]=grievance.user_ref
         doc_id = doc_ref.id
         grievance_dict["ack_number"]=doc_id
+        grievance_dict["responded"]=False
         doc_ref.set(grievance_dict)
         return {"message": "Grievance added successfully","grievance": grievance_dict}
     except Exception as e:
@@ -198,11 +199,13 @@ async def my_grievances(user_id:str):
     except Exception as e:
         raise  HTTPException(status_code=500,detail=str(e))
 
-@app.post("/api/v1/admin/reply_grievance/{ack_number}")
-async def reply_grievance(ack_number:str,reply:replyModel):
+@app.post("/api/v1/admin/reply_grievance/")
+async def reply_grievance(reply:replyModel):
     try:
+        ack_number=reply.ack_number
         doc_ref=db.collection("Grievance").document(ack_number)
         reply_dict=reply.dict()
+        reply_dict["responded"]=True
         doc_ref.update(reply_dict)
         print(reply_dict)
         return {"message": "Replied to grievance successfully","ack_number":ack_number ,"reply": reply_dict}
