@@ -218,13 +218,15 @@ async def get_all_teachers():
     try:
         doc_ref=db.collection("Teacher")
         docs=doc_ref.stream()
-        data = []
+        a_data = []
+        n_a_data = []
         # non_approved_data = []
         for doc in docs:
             doc_data = doc.to_dict()
+            doc_data["user_id"] = doc.id
             if not doc_data["approved"]:
-                data.append(doc_data)
-        return {"data":data}
+                a_data.append(doc_data)
+        return {"a_data":a_data,"n_a_data":n_a_data}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
@@ -233,12 +235,16 @@ async def get_all_non_teachers():
     try:
         doc_ref=db.collection("non_teacher")
         docs=doc_ref.stream()
-        data=[]
+        a_data=[]
+        n_a_data=[]
         for doc in docs:
             doc_data=doc.to_dict()
-            if not doc_data["approved"]:
-                data.append(doc_data)
-        return{"data":data}
+            doc_data["user_id"]=doc.id
+            if doc_data["approved"]:
+                a_data.append(doc_data)
+            else:
+                n_a_data.append(doc_data)
+        return{"a_data":a_data,"n_a_data":n_a_data}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
@@ -248,13 +254,16 @@ async def get_all_students():
     try:
         doc_ref=db.collection("student")
         docs=doc_ref.stream()
-        data = []
+        a_data = []
+        n_a_data = []
         for doc in docs:
             doc_data = doc.to_dict()
-            if not doc_data["approved"]:
-                data.append(doc_data)
-
-        return {"data": data}
+            doc_data["user_id"] = doc.id
+            if doc_data["approved"]:
+                a_data.append(doc_data)
+            else:
+                n_a_data.append(doc_data)
+        return {"a_data": a_data,"n_a_data":n_a_data}
 
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
