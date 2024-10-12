@@ -25,11 +25,26 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 # User model for signup
-class SignupUser(BaseModel):
+class StudentSignupUser(BaseModel):
+    name: str
+    email: str
+    roll_no:int
+    gender:str
+    contact_number:str
+    password: str
+    batch:int
+    user_type:str
+
+class FacultySignupUser(BaseModel):
     name: str
     email: str
     password: str
-    userType:str
+    user_type:str
+    designation:str
+    department:str
+    contact_number:str
+
+
 
 # User model for login
 class LoginUser(BaseModel):
@@ -41,14 +56,20 @@ class GrievanceModel(BaseModel):
     user_ref:str
     responded:bool=False
 
+class approveUser(BaseModel):
+    user_id:str
+    user_type:str
+    approved:bool
 
+class replyModel(BaseModel):
+    reply:str
+    responded:bool=True
 
-
-@app.post("/api/v1/user/signup/")
-async def signup_user(user: SignupUser):
+@app.post("/api/v1/student/signup/")
+async def signup_user(user: StudentSignupUser):
     try:
         # Check if the user already exists
-        user_type=user.userType
+        user_type=user.user_type
         users_ref = db.collection(user_type)
         existing_user = users_ref.where("email", "==", user.email).get()
         if existing_user:
@@ -60,24 +81,46 @@ async def signup_user(user: SignupUser):
         user_dict = user.dict()
         # Hash the password before storing
         user_dict["password"] = hash_password(user_dict["password"])
+        user_dict["approved"]=False
         doc_ref.set(user_dict)
         return {"message": "User signed up successfully", "user": user_dict}
     except Exception as e:
+        print(f"error:{str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/faculty/signup/")
+async def signup_user(user: FacultySignupUser):
+    try:
+        # Check if the user already exists
+        print(user)
+        user_type=user.user_type
+        users_ref = db.collection(user_type)
+        existing_user = users_ref.where("email", "==", user.email).get()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        # Create a document with auto-generated ID
+        doc_ref = db.collection(user_type).document()
+        user_dict = user.dict()
+        # Hash the password before storing
+        user_dict["password"] = hash_password(user_dict["password"])
+        user_dict["approved"]=False
+        doc_ref.set(user_dict)
+        return {"message": "User signed up successfully", "user": user_dict}
+    except Exception as e:
+        print(f"error:{str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/user/login/")
 async def login_user(user: LoginUser):
     try:
         user_type = user.userType
-
         # Use 'where' with keyword arguments to remove the warning
         users_ref = db.collection(user_type)
         user_query = users_ref.where(field_path="email", op_string="==", value=user.email).get()
-
         # Validate user existence
         if not user_query:
             raise HTTPException(status_code=404, detail="User not found")
-
         # Get the user document and extract the UID
         user_doc = user_query[0]
         user_data = user_doc.to_dict()
@@ -87,24 +130,14 @@ async def login_user(user: LoginUser):
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
+        if user.approved:
+            raise HTTPException(status_code=400, detail="User not approved")
         return {
             "message": "Login successful",
             "user_data": user_data
         }
     except Exception as e:
         print(f"error:{str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/users/{user_id}/")
-async def get_user(user_id: str):
-    try:
-        doc_ref = db.collection("Teacher").document(user_id)
-        user = doc_ref.get()
-        if user.exists:
-            return user.to_dict()
-        else:
-            raise HTTPException(status_code=404, detail="User not found")
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/admin/get_grievance/")
@@ -127,34 +160,104 @@ async def get_grievance():
 async def add_grievance(grievance:GrievanceModel):
     try:
         doc_ref=db.collection("Grievance").document()
-        print(doc_ref)
         grievance_dict=grievance.dict()
+        grievance_dict["user_ref"]=grievance.user_ref
+        doc_id = doc_ref.id
+        grievance_dict["ack_number"]=doc_id
         doc_ref.set(grievance_dict)
-        doc_id=doc_ref.id
-        return {"message": "Grievance added successfully","acknowledgement number":doc_id ,"grievance": grievance}
+        return {"message": "Grievance added successfully","grievance": grievance_dict}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
 
-@app.put("/users/{user_id}")
-async def update_user(user_id: str, user: SignupUser):
+@app.put("/api/v1/admin/approve/")
+async def approve_user(user:approveUser):
     try:
-        doc_ref = db.collection("users").document(user_id)
+        print(user)
+        doc_ref = db.collection(user.user_type).document(user.user_id)
         user_dict = user.dict()
-        # Hash the password before updating
-        user_dict["password"] = hash_password(user_dict["password"])
+        user_dict["approved"]=user.approved
         doc_ref.update(user_dict)
         return {"message": "User updated successfully", "user": user_dict}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/users/{user_id}")
-async def delete_user(user_id: str):
+
+
+@app.get("/api/v1/user/get_grievances/{user_id}")
+async def my_grievances(user_id:str):
     try:
-        doc_ref = db.collection("users").document(user_id)
-        doc_ref.delete()
-        return {"message": "User deleted successfully"}
+        doc_ref=db.collection("Grievance").where("user_ref","==",user_id)
+        docs=doc_ref.stream()
+        all_data=[]
+        for doc in docs:
+            doc_data=doc.to_dict()
+            print(doc_data)
+            all_data.append(doc_data)
+        print(all_data)
+        return{"message":"Grievance","data":all_data}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise  HTTPException(status_code=500,detail=str(e))
+
+@app.post("/api/v1/admin/reply_grievance/{ack_number}")
+async def reply_grievance(ack_number:str,reply:replyModel):
+    try:
+        doc_ref=db.collection("Grievance").document(ack_number)
+        reply_dict=reply.dict()
+        doc_ref.update(reply_dict)
+        print(reply_dict)
+        return {"message": "Replied to grievance successfully","ack_number":ack_number ,"reply": reply_dict}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
+@app.get("/api/v1/admin/get_all_teachers")
+async def get_all_teachers():
+    try:
+        doc_ref=db.collection("Teacher")
+        docs=doc_ref.stream()
+        approved_data = []
+        non_approved_data = []
+        for doc in docs:
+            doc_data = doc.to_dict()
+            if doc_data["approved"]:
+                approved_data.append(doc_data)
+            else:
+                non_approved_data.append(doc_data)
+        return {"Approved": approved_data, "Non-Approved": non_approved_data}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
+@app.get("/api/v1/admin/get_all_non_teachers")
+async def get_all_non_teachers():
+    try:
+        doc_ref=db.collection("non_teacher")
+        docs=doc_ref.stream()
+        approved_data=[]
+        non_approved_data=[]
+        for doc in docs:
+            doc_data=doc.to_dict()
+            if doc_data["approved"]:
+                approved_data.append(doc_data)
+            else:
+                non_approved_data.append(doc_data)
+        return{"Approved":approved_data,"Non-Approved":non_approved_data}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
 
 
+@app.get("/api/v1/admin/get_all_students")
+async def get_all_students():
+    try:
+        doc_ref=db.collection("student")
+        docs=doc_ref.stream()
+        approved_data = []
+        non_approved_data = []
+        for doc in docs:
+            doc_data = doc.to_dict()
+            if doc_data["approved"]:
+                approved_data.append(doc_data)
+            else:
+                non_approved_data.append(doc_data)
+        return {"Approved": approved_data, "Non-Approved": non_approved_data}
 
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
