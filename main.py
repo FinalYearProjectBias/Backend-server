@@ -130,7 +130,7 @@ async def login_user(user: LoginUser):
         # Verify the password
         if hash_password(user.password) != user_data.get("password"):
             raise HTTPException(status_code=400, detail="Invalid password")
-        if user.approved:
+        if not user.approved:
             raise HTTPException(status_code=400, detail="User not approved")
         return {
             "message": "Login successful",
