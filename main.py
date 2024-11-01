@@ -244,10 +244,10 @@ async def get_approved_users():
         data=[]
         student_data=get_approved_data("student")
         teacher_data = get_approved_data("teacher")
-        non_teacher_data = get_approved_data("non_teacher")
+        staff_data = get_approved_data("staff")
         data.append(student_data)
         data.append(teacher_data)
-        data.append(non_teacher_data)
+        data.append(staff_data)
         return data
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
@@ -258,10 +258,10 @@ async def get_not_approved_users():
         data=[]
         student_data=get_not_approved_data("student")
         teacher_data = get_not_approved_data("teacher")
-        non_teacher_data = get_not_approved_data("non_teacher")
+        staff_data = get_not_approved_data("staff")
         data.append(student_data)
         data.append(teacher_data)
-        data.append(non_teacher_data)
+        data.append(staff_data)
         return data
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
