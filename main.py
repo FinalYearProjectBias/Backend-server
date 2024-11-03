@@ -53,10 +53,13 @@ class LoginUser(BaseModel):
     password: str
     userType:str
 
+
 class GrievanceModel(BaseModel):
     title:str
-    message:str
+    description:str
+    name:str
     user_ref:str
+    type:str
 
 class approveUser(BaseModel):
     user_id:str
