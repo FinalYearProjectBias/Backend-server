@@ -62,6 +62,7 @@ class GrievanceModel(BaseModel):
     name:str
     user_ref:str
     type:str
+    date:str
 
 class approveUser(BaseModel):
     user_id:str
