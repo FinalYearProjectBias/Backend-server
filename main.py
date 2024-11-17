@@ -158,7 +158,7 @@ async def get_grievance():
             doc_data=doc.to_dict()
             doc_data["ack_number"]=doc.id
             all_data.append(doc_data)
-        return{"message":"Grievance","data":all_data}
+        return all_data
     except Exception as e:
         raise  HTTPException(status_code=500,detail=str(e))
 
