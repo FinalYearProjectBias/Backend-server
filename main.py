@@ -29,12 +29,12 @@ def hash_password(password: str) -> str:
 class StudentSignupUser(BaseModel):
     name: str
     email: str
-    roll_no:int
+    roll_no:str
     gender:str
     course:str
     contact_number:str
     password: str
-    batch:int
+    batch:str
     user_type:str
 
 class FacultySignupUser(BaseModel):
