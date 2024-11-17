@@ -70,6 +70,7 @@ class approveUser(BaseModel):
 
 class replyModel(BaseModel):
     reply:str
+    date:str
     ack_number:str
 
 @app.post("/api/v1/student/signup/")
