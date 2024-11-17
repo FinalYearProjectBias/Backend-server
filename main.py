@@ -31,6 +31,7 @@ class StudentSignupUser(BaseModel):
     email: str
     roll_no:int
     gender:str
+    course:str
     contact_number:str
     password: str
     batch:int
