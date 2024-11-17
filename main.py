@@ -74,6 +74,7 @@ class replyModel(BaseModel):
 @app.post("/api/v1/student/signup/")
 async def signup_user(user: StudentSignupUser):
     try:
+        print(user)
         # Check if the user already exists
         user_type=user.user_type
         users_ref = db.collection(user_type)
