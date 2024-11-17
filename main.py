@@ -40,6 +40,7 @@ class StudentSignupUser(BaseModel):
 class FacultySignupUser(BaseModel):
     name: str
     email: str
+    gender:str
     password: str
     user_type:str
     designation:str
