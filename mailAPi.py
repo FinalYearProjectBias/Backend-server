@@ -20,6 +20,7 @@ def send_email(to_email: str, subject: str, html_content: str):
             html_content=html_content
         )
         response = sg.send(message)
+        print(response)
         return {
             "status_code": response.status_code,
             "body": response.body.decode('utf-8') if response.body else "",
