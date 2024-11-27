@@ -1,4 +1,5 @@
 from dataclasses import Field
+from http.client import responses
 from logging import raiseExceptions
 
 from fastapi import FastAPI, HTTPException
@@ -9,7 +10,7 @@ from pyexpat.errors import messages
 from firebase_config import db  # Firebase config
 from typing import Optional
 import hashlib
-
+from mailAPi import send_email
 app = FastAPI()
 
 # Add CORS middleware
@@ -73,6 +74,27 @@ class replyModel(BaseModel):
     reply:str
     date:str
     ack_number:str
+
+class OTPUser(BaseModel):
+    content:str
+    email:str
+    subject:str
+
+@app.post("/api/v1/user/otp/")
+async def send_otp(user:OTPUser):
+    print(user)
+    try:
+        content = OTPUser["content"]
+        to_email = OTPUser["email"]
+        subject = OTPUser["subject"]
+        response=send_email(to_email, subject, content)
+        return response
+    except Exception as e:
+        print(f"error:{str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 @app.post("/api/v1/student/signup/")
 async def signup_user(user: StudentSignupUser):
