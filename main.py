@@ -84,9 +84,9 @@ class OTPUser(BaseModel):
 async def send_otp(user:OTPUser):
     print(user)
     try:
-        content = OTPUser["content"]
-        to_email = OTPUser["email"]
-        subject = OTPUser["subject"]
+        content = OTPUser.content
+        to_email = OTPUser.email
+        subject = OTPUser.subject
         response=send_email(to_email, subject, content)
         return response
     except Exception as e:
