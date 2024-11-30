@@ -80,6 +80,11 @@ class OTPUser(BaseModel):
     email:str
     subject:str
 
+class EmailUpdateRequest(BaseModel):
+    oldEmail: str
+    newEmail: str
+
+
 @app.post("/api/change-password/")
 async def change_password(password: str):
     # Reference the specific document in Firestore
@@ -103,8 +108,10 @@ async def change_password(password: str):
 
     
 @app.post("/api/change-email/")
-async def change_email(email: str):
-    print(email)
+async def change_email(request: EmailUpdateRequest):
+    old_email = request.oldEmail
+    new_email = request.newEmail
+    print(request)
     # Reference the specific document in Firestore
     doc_ref = db.collection('admin').document('YMOdhYQVS6q79oCUZNEE')
     
