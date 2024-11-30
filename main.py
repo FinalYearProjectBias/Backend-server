@@ -124,7 +124,7 @@ async def change_email(request: EmailUpdateRequest):
     user_dict = user_data.to_dict()
     
     # Update the email field
-    user_dict["email"] = email
+    user_dict["email"] = new_email
     print(user_dict)
     # Save the updated data back to Firestore
     doc_ref.set(user_dict)
