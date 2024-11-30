@@ -93,6 +93,41 @@ class PasswordUserRequest(BaseModel):
     user_id:str
     user_type:str
 
+
+class UpdateProfileRequest(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    contact_number: str
+    user_type: str
+
+
+@app.put("/api/update-profile")
+async def update_profile(request: UpdateProfileRequest):
+    user_id = request.user_id
+    user_type = request.user_type  # Use `user_type` to identify the collection
+
+    try:
+        # Fetch the user document from the corresponding collection
+        user_doc_ref = db.collection(user_type).document(user_id)
+        user_doc = user_doc_ref.get()
+
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Update user information in Firestore
+        user_doc_ref.update(
+            {
+                "name": request.name,
+                "email": request.email,
+                "contact_number": request.contact_number,
+            }
+        )
+        return {"message": "Profile updated successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
+
 @app.post("/api/change-user-password/")
 async def change_password(request: PasswordUserRequest):
     # Reference the specific document in Firestore
