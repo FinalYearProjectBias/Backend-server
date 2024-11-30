@@ -80,6 +80,31 @@ class OTPUser(BaseModel):
     email:str
     subject:str
 
+@app.post("/api/change-password/")
+async def change_password(password: str):
+    # Reference the specific document in Firestore
+    doc_ref = db.collection('admin').document('YMOdhYQVS6q79oCUZNEE')
+    
+    # Fetch the document data
+    user_data = doc_ref.get()
+    if not user_data.exists:
+        return {"error": "Admin document not found"}  # Handle case where document does not exist
+    
+    # Convert document data to a dictionary
+    user_dict = user_data.to_dict()
+    
+    # Update the password field
+    user_dict["password"] = password
+    
+    # Save the updated data back to Firestore
+    doc_ref.set(user_dict)
+    
+    return {"message": "Password has been changed successfully"}
+
+    
+    
+    
+
 @app.post("/api/v1/user/otp/")
 async def send_otp(user:OTPUser):
     print(user)
