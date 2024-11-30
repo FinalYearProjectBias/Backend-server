@@ -87,6 +87,37 @@ class EmailUpdateRequest(BaseModel):
 class PasswordRequest(BaseModel):
     password: str  
 
+
+class PasswordUserRequest(BaseModel):
+    password: str
+    user_id:str
+    user_type:str
+
+@app.post("/api/change-user-password/")
+async def change_password(request: PasswordUserRequest):
+    # Reference the specific document in Firestore
+    password=request.password
+    user_id=request.user_id
+    user_type=request.user_type
+    doc_ref = db.collection(user_type).document(user_id)
+    
+    # Fetch the document data
+    user_data = doc_ref.get()
+    if not user_data.exists:
+        return {"error": "Admin document not found"}  # Handle case where document does not exist
+    
+    # Convert document data to a dictionary
+    user_dict = user_data.to_dict()
+    
+    # Update the password field
+    user_dict["password"] = password
+    
+    # Save the updated data back to Firestore
+    doc_ref.set(user_dict)
+    
+    return {"message": "Password has been changed successfully"}
+
+
 @app.post("/api/change-password/")
 async def change_password(request: PasswordRequest):
     # Reference the specific document in Firestore
