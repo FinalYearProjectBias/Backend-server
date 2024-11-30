@@ -104,6 +104,7 @@ async def change_password(password: str):
     
 @app.post("/api/change-email/")
 async def change_email(email: str):
+    print(email)
     # Reference the specific document in Firestore
     doc_ref = db.collection('admin').document('YMOdhYQVS6q79oCUZNEE')
     
@@ -117,7 +118,7 @@ async def change_email(email: str):
     
     # Update the email field
     user_dict["email"] = email
-    
+    print(user_dict)
     # Save the updated data back to Firestore
     doc_ref.set(user_dict)
     
