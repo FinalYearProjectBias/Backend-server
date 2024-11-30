@@ -84,10 +84,13 @@ class EmailUpdateRequest(BaseModel):
     oldEmail: str
     newEmail: str
 
+class PasswordRequest(BaseModel):
+    password: str  
 
 @app.post("/api/change-password/")
-async def change_password(password: str):
+async def change_password(request: PasswordRequest):
     # Reference the specific document in Firestore
+    password=request.password
     doc_ref = db.collection('admin').document('YMOdhYQVS6q79oCUZNEE')
     
     # Fetch the document data
